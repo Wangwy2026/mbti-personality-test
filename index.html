@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI 性格测评</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f3ff;color:#1e1b2e;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.card{max-width:480px;width:100%}
+.card h1{font-size:28px;font-weight:800;text-align:center;margin-bottom:8px}
+.card .sub{font-size:14px;color:#6b6880;text-align:center;margin-bottom:32px;line-height:1.7}
+.links{display:flex;flex-direction:column;gap:14px}
+.link-item{display:flex;align-items:center;gap:14px;background:#fff;border-radius:14px;padding:18px 20px;text-decoration:none;color:#1e1b2e;box-shadow:0 2px 12px rgba(99,102,241,.08);transition:all .25s ease;border:2px solid transparent}
+.link-item:hover{border-color:#6366f1;transform:translateY(-2px);box-shadow:0 6px 20px rgba(99,102,241,.12)}
+.link-item .icon{font-size:32px}
+.link-item .info h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.link-item .info p{font-size:12px;color:#6b6880}
+.link-item .arrow{margin-left:auto;font-size:20px;color:#ccc}
+.footer{text-align:center;margin-top:28px;font-size:12px;color:#aaa}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>MBTI 性格测评</h1>
+<p class="sub">三个版本，选择你喜欢的体验</p>
+<div class="links">
+<a class="link-item" href="mbti-test.html">
+<span class="icon">🧩</span>
+<div class="info"><h3>MBTI 性格测评</h3><p>16题经典版 · 1分钟 · 专属卡片</p></div>
+<span class="arrow">→</span>
+</a>
+<a class="link-item" href="mbti-survey.html">
+<span class="icon">📋</span>
+<div class="info"><h3>MBTI 性格测评（20题详细版）</h3><p>20题四维度解析 · 3分钟 · 含字母含义</p></div>
+<span class="arrow">→</span>
+</a>
+<a class="link-item" href="mbti-prototype.html">
+<span class="icon">📱</span>
+<div class="info"><h3>交互原型预览</h3><p>手机框模拟 · FR需求标注 · 双模式</p></div>
+<span class="arrow">→</span>
+</a>
+</div>
+<p class="footer">本测评仅供娱乐和自我了解，不构成心理诊断或专业建议</p>
+</div>
+</body>
+</html>
