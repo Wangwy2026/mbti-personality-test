@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI 性格测评 · 交互原型</title>
+<style>
+/* ========== Reset ========== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+--purple:#667eea;
+--purple-d:#764ba2;
+--bg:#f0f2f5;
+--sidebar-w:320px;
+--phone-w:375px;
+--phone-h:667px;
+--radius:16px;
+--shadow:0 4px 24px rgba(0,0,0,.08);
+--shadow-lg:0 8px 40px rgba(0,0,0,.12);
+--transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+html,body{width:100%;height:100%;background:var(--bg);font-family:var(--font);color:#1a1a2e;overflow:hidden}
+
+/* ========== Layout ========== */
+.app{display:flex;width:100%;height:100vh}
+
+/* ========== Sidebar ========== */
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:#fff;border-right:1px solid #e8ecf4;display:flex;flex-direction:column;height:100vh;overflow-y:auto;z-index:10}
+.sidebar-header{padding:24px 20px 16px;border-bottom:1px solid #f0f0f5}
+.sidebar-header h1{font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px}
+.sidebar-header .sub{font-size:12px;color:#999}
+.mode-toggle{display:flex;padding:12px 20px;gap:8px;border-bottom:1px solid #f0f0f5}
+.mode-btn{flex:1;padding:10px 8px;border:2px solid #e8ecf4;border-radius:10px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);text-align:center}
+.mode-btn.active{border-color:var(--purple);background:linear-gradient(135deg,#f5f3ff,#ede9fe);color:var(--purple)}
+.mode-btn:hover:not(.active){border-color:#c7d0f0}
+
+/* Page nav */
+.page-nav{padding:16px 20px;border-bottom:1px solid #f0f0f5}
+.page-nav-label{font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.page-nav-items{display:flex;gap:8px}
+.page-nav-item{flex:1;padding:8px 4px;border:2px solid #e8ecf4;border-radius:8px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);text-align:center;font-family:var(--font)}
+.page-nav-item.active{border-color:var(--purple);background:linear-gradient(135deg,#f5f3ff,#ede9fe);color:var(--purple)}
+.page-nav-item:hover:not(.active){border-color:#c7d0f0}
+
+/* FR List */
+.fr-section{padding:16px 20px;flex:1}
+.fr-section-label{font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.fr-list{display:flex;flex-direction:column;gap:6px}
+.fr-item{padding:10px 12px;border-radius:8px;background:#f8f9fb;cursor:pointer;transition:var(--transition);border:2px solid transparent}
+.fr-item:hover{background:#f0f4ff}
+.fr-item.highlight{border-color:var(--purple);background:linear-gradient(135deg,#f5f3ff,#ede9fe)}
+.fr-item-id{font-size:11px;font-weight:800;color:var(--purple);margin-bottom:2px}
+.fr-item-name{font-size:13px;font-weight:600;color:#333}
+.fr-item-desc{font-size:11px;color:#888;margin-top:2px;line-height:1.4}
+
+/* ========== Main Area ========== */
+.main{flex:1;display:flex;justify-content:center;align-items:center;padding:20px;position:relative;overflow:auto}
+.main::before{content:"";position:absolute;inset:0;background:
+radial-gradient(circle at 20% 50%,rgba(102,126,234,.05),transparent 50%),
+radial-gradient(circle at 80% 20%,rgba(118,75,162,.05),transparent 50%);
+pointer-events:none}
+
+/* ========== Phone Frame ========== */
+.phone-frame{width:var(--phone-w);height:var(--phone-h);background:#000;border-radius:40px;padding:12px;box-shadow:var(--shadow-lg),0 0 0 1px rgba(0,0,0,.1);position:relative;flex-shrink:0;z-index:1}
+.phone-screen{width:100%;height:100%;background:#f0f4ff;border-radius:30px;overflow:hidden;position:relative}
+.phone-notch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:24px;background:#000;border-radius:0 0 16px 16px;z-index:100;border-radius:16px}
+.phone-screen-inner{width:100%;height:100%;overflow-y:auto;position:relative}
+.phone-screen-inner::-webkit-scrollbar{display:none}
+
+/* ========== Annotation Overlay ========== */
+.annotation-layer{position:absolute;inset:0;pointer-events:none;z-index:50;display:none}
+.annotation-layer.active{display:block}
+.anno-label{position:absolute;background:linear-gradient(135deg,var(--purple),var(--purple-d));color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 8px rgba(102,126,234,.3);pointer-events:auto;cursor:help;transform:translate(-50%,-50%);line-height:1.2}
+.anno-label::after{content:"";position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--purple-d)}
+.anno-label.fr-1::after,.anno-label[data-fr="1"]::after{border-top-color:var(--purple-d)}
+.anno-label[data-fr="6"]{transform:translate(-50%,-50%) scale(.95)}
+.anno-badge{position:absolute;width:auto;font-size:9px;opacity:.85;font-weight:600;letter-spacing:.5px}
+.anno-hint{position:absolute;background:#fff;color:#667eea;font-size:10px;padding:6px 10px;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.08);pointer-events:none;white-space:nowrap;max-width:200px;z-index:60;display:none;border:1px solid #e8ecf4}
+.anno-hint.show{display:block}
+.anno-hint-title{font-weight:800;font-size:11px;color:var(--purple);margin-bottom:2px}
+.anno-hint-text{color:#666;font-size:10px;line-height:1.4;white-space:normal}
+
+/* ========== App Pages (inside phone) ========== */
+.page{display:none;flex-direction:column;min-height:100%;position:relative}
+.page.active{display:flex}
+
+/* -- Home -- */
+.p-home{align-items:center;justify-content:center;text-align:center;padding:40px 24px;background:#f0f4ff}
+.p-home .logo{font-size:48px;margin-bottom:10px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.p-home h2{font-size:24px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.p-home .subtitle{font-size:13px;color:#666;margin-bottom:24px;line-height:1.6}
+.p-home .info-cards{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;justify-content:center}
+.p-home .info-card{background:#fff;border-radius:10px;padding:10px 12px;box-shadow:var(--shadow);font-size:11px;color:#555;display:flex;align-items:center;gap:4px}
+.p-home .info-card .icon{font-size:16px}
+.p-home .start-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:14px 40px;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(102,126,234,.4);transition:var(--transition);font-family:var(--font)}
+.p-home .start-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(102,126,234,.5)}
+.p-home .start-btn:active{transform:translateY(0)}
+.p-home .footer{margin-top:18px;font-size:10px;color:#aaa}
+
+/* -- Quiz -- */
+.p-quiz{padding:20px 16px;background:#f0f4ff}
+.p-quiz .progress-bar{width:100%;height:5px;background:#e0e6f0;border-radius:3px;margin-bottom:6px;overflow:hidden}
+.p-quiz .progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:3px;transition:width .4s ease}
+.p-quiz .progress-text{font-size:11px;color:#999;margin-bottom:16px;text-align:right}
+.p-quiz .question-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 20px;margin-bottom:14px;animation:slideIn .4s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(15px)}to{opacity:1;transform:translateX(0)}}
+.p-quiz .q-title{font-size:17px;font-weight:700;line-height:1.5;margin-bottom:20px;color:#1a1a2e}
+.p-quiz .options{display:flex;flex-direction:column;gap:10px}
+.p-quiz .option{border:2px solid #e8ecf4;border-radius:10px;padding:14px 16px;font-size:13px;cursor:pointer;transition:var(--transition);background:#fff;color:#333;font-family:var(--font);text-align:left;line-height:1.5}
+.p-quiz .option:hover{border-color:#667eea;background:#f5f3ff;transform:translateY(-1px)}
+.p-quiz .option.selected{border-color:#667eea;background:linear-gradient(135deg,#f5f3ff,#ede9fe);font-weight:600}
+.p-quiz .quiz-nav{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:10px}
+.p-quiz .back-btn{background:none;border:none;color:#999;font-size:13px;cursor:pointer;padding:6px 10px;font-family:var(--font);transition:var(--transition)}
+.p-quiz .back-btn:hover{color:#667eea}
+.p-quiz .back-btn:disabled{opacity:.3;cursor:not-allowed}
+.p-quiz .back-btn.hidden{visibility:hidden}
+
+/* -- Result -- */
+.p-result{align-items:center;padding:30px 16px;background:#f0f4ff}
+.p-result .result-card{width:100%;max-width:320px;background:#fff;border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden;animation:cardPop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes cardPop{0%{opacity:0;transform:scale(.85)}100%{opacity:1;transform:scale(1)}}
+.p-result .card-header{padding:24px 20px 12px;text-align:center;color:#fff;position:relative}
+.p-result .card-header .type-code{font-size:40px;font-weight:900;letter-spacing:2px;text-shadow:0 2px 8px rgba(0,0,0,.15)}
+.p-result .card-header .type-slogan{font-size:14px;margin-top:6px;opacity:.95;font-weight:500}
+.p-result .card-illustration{display:flex;justify-content:center;align-items:center;padding:16px;background:#fff}
+.p-result .card-illustration svg{width:150px;height:150px}
+.p-result .card-body{padding:0 20px 20px;text-align:center}
+.p-result .type-title{font-size:19px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+.p-result .type-desc{font-size:12px;color:#666;line-height:1.7;margin-bottom:16px}
+.p-result .percentages{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px}
+.p-result .pct-item{background:#f5f5fa;border-radius:6px;padding:6px 10px;font-size:10px;color:#555;display:flex;align-items:center;gap:4px}
+.p-result .pct-label{font-weight:600}
+.p-result .pct-bar{width:50px;height:5px;background:#e0e6f0;border-radius:3px;overflow:hidden;display:inline-block}
+.p-result .pct-fill{height:100%;border-radius:3px}
+.p-result .card-tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:16px}
+.p-result .card-tag{background:#f0f4ff;color:#667eea;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:500}
+.p-result .actions{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px;margin-top:18px}
+.p-result .save-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:14px;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(102,126,234,.4);transition:var(--transition);font-family:var(--font)}
+.p-result .save-btn:hover{transform:translateY(-2px)}
+.p-result .retry-btn{background:#fff;color:#667eea;border:2px solid #667eea;padding:12px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font)}
+.p-result .retry-btn:hover{background:#f5f3ff}
+.p-result .share-tip{font-size:10px;color:#aaa;margin-top:12px;text-align:center}
+
+/* ========== Bottom Bar (phone screen) ========== */
+.bottom-status{height:20px;display:flex;justify-content:space-between;align-items:center;padding:0 20px;font-size:10px;color:#999;background:#f0f4ff;flex-shrink:0}
+
+/* ========== Info Tooltip ========== */
+.info-bar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:#fff;padding:8px 16px;border-radius:20px;box-shadow:var(--shadow);font-size:12px;color:#666;z-index:5;white-space:nowrap;border:1px solid #e8ecf4}
+.info-bar .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--purple);margin-right:6px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+<div class="app">
+<!-- ========== Sidebar ========== -->
+<div class="sidebar">
+<div class="sidebar-header">
+<h1>MBTI 性格测评</h1>
+<div class="sub">交互原型 · V1.0 · 基于 PRD 生成</div>
+</div>
+
+<!-- Mode Toggle -->
+<div class="mode-toggle">
+<button class="mode-btn active" id="modeInteractive" data-mode="interactive">交互模式</button>
+<button class="mode-btn" id="modeAnnotate" data-mode="annotate">标注模式</button>
+</div>
+
+<!-- Page Navigation -->
+<div class="page-nav">
+<div class="page-nav-label">页面跳转</div>
+<div class="page-nav-items">
+<button class="page-nav-item active" data-page="home">首页</button>
+<button class="page-nav-item" data-page="quiz">测试页</button>
+<button class="page-nav-item" data-page="result">结果页</button>
+</div>
+</div>
+
+<!-- FR List -->
+<div class="fr-section">
+<div class="fr-section-label">功能需求 (PRD)</div>
+<div class="fr-list" id="frList"></div>
+</div>
+</div>
+
+<!-- ========== Main Area ========== -->
+<div class="main">
+<div class="phone-frame">
+<div class="phone-notch"></div>
+<div class="phone-screen">
+<div class="phone-screen-inner" id="phoneInner">
+
+<!-- Home Page -->
+<div class="page p-home active" id="page-home">
+<div class="logo">🧩</div>
+<h2>MBTI 性格测评</h2>
+<p class="subtitle">16 道趣味题，1 分钟找到你的性格身份<br>生成专属卡片，晒出你的 MBTI</p>
+<div class="info-cards">
+<div class="info-card"><span class="icon">⚡</span>1 分钟搞定</div>
+<div class="info-card"><span class="icon">🔒</span>隐私无忧</div>
+<div class="info-card"><span class="icon">🎨</span>专属卡片</div>
+</div>
+<button class="start-btn" id="startBtn">开始测试</button>
+<div class="footer">仅供娱乐参考 · 不代表专业心理评估</div>
+</div>
+
+<!-- Quiz Page -->
+<div class="page p-quiz" id="page-quiz">
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+<div class="progress-text">第 <span id="progressNum">1</span> / 16 题</div>
+<div class="question-card" id="questionCard">
+<div class="q-title" id="qTitle"></div>
+<div class="options" id="qOptions"></div>
+</div>
+<div class="quiz-nav">
+<button class="back-btn" id="backBtn">← 上一题</button>
+</div>
+</div>
+
+<!-- Result Page -->
+<div class="page p-result" id="page-result">
+<div class="result-card" id="resultCard">
+<div class="card-header" id="cardHeader">
+<div class="type-code" id="typeCode"></div>
+<div class="type-slogan" id="typeSlogan"></div>
+</div>
+<div class="card-illustration" id="cardIllustration"></div>
+<div class="card-body">
+<div class="type-title" id="typeTitle"></div>
+<div class="type-desc" id="typeDesc"></div>
+<div class="percentages" id="percentages"></div>
+<div class="card-tags" id="cardTags"></div>
+</div>
+</div>
+<div class="actions">
+<button class="save-btn" id="saveBtn">📸 保存卡片图片</button>
+<button class="retry-btn" id="retryBtn">🔄 重新测试</button>
+</div>
+<div class="share-tip">保存图片后，发到朋友圈晒出你的性格身份吧！</div>
+</div>
+
+</div>
+</div>
+
+<!-- Annotation Layer -->
+<div class="annotation-layer" id="annoLayer"></div>
+</div>
+
+<!-- Info Bar -->
+<div class="info-bar" id="infoBar"><span class="dot"></span>交互模式 · 点击体验完整流程</div>
+</div>
+
+<script>
+// ============================================================
+// FR 标注数据
+// ============================================================
+const FR_DATA=[
+{id:"FR-1",name:"16题二选一测试",desc:"4维度各4题，点击后自动跳下一题",pages:["quiz"]},
+{id:"FR-2",name:"计分与类型判定",desc:"多数判定+百分比展示倾向强度",pages:["result"]},
+{id:"FR-3",name:"16种角色插画卡片",desc:"拟人化SVG插画，风格统一",pages:["result"]},
+{id:"FR-4",name:"性格身份卡生成",desc:"插画+类型+标语+描述+标签+百分比",pages:["result"]},
+{id:"FR-5",name:"一键保存卡片图片",desc:"2x高清PNG下载到本地",pages:["result"]},
+{id:"FR-6",name:"返回上一题",desc:"答题中可返回修改答案",pages:["quiz"]},
+{id:"FR-7",name:"重新测试",desc:"一键清空重来",pages:["result"]},
+{id:"FR-8",name:"测试进度展示",desc:"进度条+题号提示",pages:["quiz"]},
+{id:"FR-9",name:"首页引导",desc:"卖点展示+开始测试入口",pages:["home"]},
+];
+
+// 标注位置 (相对于 phone-screen-inner 的百分比定位)
+const ANNO_POSITIONS={
+home:[
+{fr:"FR-9",x:50,y:12,text:"FR-9 首页引导：产品名+卖点+开始按钮"},
+{fr:"FR-9",x:50,y:55,text:"三个卖点卡片：1分钟/隐私/专属"},
+{fr:"FR-9",x:50,y:82,text:"开始测试入口 + 仅供娱乐提示"},
+],
+quiz:[
+{fr:"FR-8",x:50,y:4,text:"FR-8 进度条：随答题推进"},
+{fr:"FR-8",x:92,y:7,text:"题号 1/16"},
+{fr:"FR-1",x:50,y:22,text:"FR-1 题干：二选一形式"},
+{fr:"FR-1",x:50,y:45,text:"FR-1 选项A：点击后高亮+自动跳题"},
+{fr:"FR-1",x:50,y:62,text:"FR-1 选项B：300ms延迟后跳转"},
+{fr:"FR-6",x:15,y:95,text:"FR-6 返回上一题：回显已选答案"},
+],
+result:[
+{fr:"FR-4",x:50,y:8,text:"FR-4 类型代码 + 趣味标语"},
+{fr:"FR-3",x:50,y:28,text:"FR-3 专属拟人化角色插画"},
+{fr:"FR-4",x:50,y:45,text:"FR-4 类型名称+性格描述"},
+{fr:"FR-2",x:50,y:58,text:"FR-2 四维度倾向百分比"},
+{fr:"FR-4",x:50,y:70,text:"FR-4 性格标签（每类型4个）"},
+{fr:"FR-5",x:50,y:82,text:"FR-5 一键保存高清卡片图片"},
+{fr:"FR-7",x:50,y:92,text:"FR-7 重新测试：清空重来"},
+],
+};
+
+// ============================================================
+// 16 道测试题目 (复用 mbti-test.html 数据)
+// ============================================================
+const QUESTIONS=[
+{text:"周末到了，你更想怎么过？",A:"约朋友出去聚聚，越热闹越好",B:"一个人宅家追剧打游戏，独处充电",dim:"EI",pole:"E"},
+{text:"到了新环境，你的第一反应是？",A:"主动找人聊天，很快就能打成一片",B:"先观察一会儿，等别人来找自己",dim:"EI",pole:"E"},
+{text:"遇到开心的事，你会？",A:"立刻发朋友圈/群聊告诉所有人",B:"默默开心就好，不一定和别人说",dim:"EI",pole:"E"},
+{text:"手机一天没响，你会？",A:"有点慌，觉得是不是被遗忘了",B:"太好了，终于可以安静一会儿",dim:"EI",pole:"E"},
+{text:"读一本小说，你更在意什么？",A:"故事的情节是否合理、细节是否真实",B:"故事背后的隐喻和深层含义",dim:"SN",pole:"S"},
+{text:"解决问题时，你更倾向？",A:"用已有的经验和靠谱的方法，稳扎稳打",B:"跳出框架想个新方案，试试没走过的路",dim:"SN",pole:"S"},
+{text:"别人跟你说一件事，你更关注？",A:"他说了什么具体的事实和信息",B:"他说话时的情绪和言外之意",dim:"SN",pole:"S"},
+{text:"你更喜欢的旅行方式是？",A:"做好详细攻略，按计划打卡每个景点",B:"随便走走看看，路上有什么惊喜都行",dim:"SN",pole:"S"},
+{text:"朋友跟你倒苦水，你更可能说？",A:"帮你分析问题在哪，该怎么解决",B:"先安慰你，陪你一起骂就对了",dim:"TF",pole:"T"},
+{text:"做个重要的决定，你更靠？",A:"逻辑分析利弊，理性权衡后做选择",B:"内心感受和直觉，觉得对就去做",dim:"TF",pole:"T"},
+{text:"看到新闻里有人遭遇不幸，你？",A:"思考是什么导致了这个问题",B:"先感到心疼和难过，希望他没事",dim:"TF",pole:"T"},
+{text:"和朋友意见不合时，你会？",A:"就事论事据理力争，对就是对",B:"维护关系更重要，求同存异",dim:"TF",pole:"T"},
+{text:"你的书桌/桌面通常什么样？",A:"整整齐齐，东西都有固定位置",B:"看起来有点乱，但我自己知道东西在哪",dim:"JP",pole:"J"},
+{text:"面对截止日期，你的节奏是？",A:"提前做好，最后一天淡定交差",B:"不到最后一刻没有灵感，冲刺完成",dim:"JP",pole:"J"},
+{text:"旅行计划你更喜欢？",A:"提前订好机票酒店行程表，心里有底",B:"走一步看一步，随性才有惊喜",dim:"JP",pole:"J"},
+{text:"你的待办清单是？",A:"列好打勾，完成一项划掉一项很爽",B:"列了但不太看，想起来就做",dim:"JP",pole:"J"}
+];
+
+// ============================================================
+// 16 种 MBTI 类型数据
+// ============================================================
+const TYPES={
+INTJ:{name:"建筑师",slogan:"社恐但内心戏最多的人",color:"#3b5998",color2:"#4e6ca8",desc:"你是天生的战略家，脑子里永远在跑着几条世界线。别人看到的是沉默，其实你是在脑内模拟了十种可能。独立、果断，比起被理解更在意把事情做对。",tags:["战略思维","独立","完美主义","脑内模拟器"]},
+INTP:{name:"逻辑学家",slogan:"永远在'但是……'的思考者",color:"#4a6fa5",color2:"#5b7fb5",desc:"别人聊天你拆逻辑，别人接受你问为什么。你是行走的'十万个为什么'，对一切原理充满好奇。社交是耗电的，拆解问题是充电的。",tags:["逻辑","好奇","拆解","懒癌晚期"]},
+ENTJ:{name:"指挥官",slogan:"KING来了，都让开",color:"#c0392b",color2:"#d4453a",desc:"天生领袖，执行力拉满。你的口头禅是'让我来'。别人还在讨论方案你已经动了。有时太强势，但跟着你准没错。",tags:["领导力","果断","效率","天生C位"]},
+ENTP:{name:"辩论家",slogan:"你说得对，但我偏要杠",color:"#e67e22",color2:"#ee8e3a",desc:"你是话题搅局者，永远的魔鬼代言人。不是故意抬杠，是真的觉得反方也有道理。点子多到爆炸，执行嘛……看心情。",tags:["脑洞大","辩论","创意","三分钟热度"]},
+INFJ:{name:"提倡者",slogan:"看透不说透的神秘主义者",color:"#6c5ce7",color2:"#7d6ef0",desc:"你有一种'读心术'，别人还没开口你已经知道他在想什么。理想主义者，想让世界变得更好，但经常因为太懂别人而忘了自己。",tags:["共情力","理想主义","神秘","治愈系"]},
+INFP:{name:"调停者",slogan:"心里住着一整个童话世界",color:"#a29bfe",color2:"#b3acff",desc:"你是温柔的 dreamer，内心世界比外部世界丰富十倍。容易感动，也容易内耗。别人不懂你的浪漫没关系，你自己懂就好。",tags:["浪漫","敏感","理想主义","内耗冠军"]},
+ENFJ:{name:"主人公",slogan:"全世界的妈妈粉",color:"#e84393",color2:"#ee57a3",desc:"你是人群中的太阳，走到哪暖到哪。天生会照顾人，记得每个人的喜好。但偶尔也请让自己被照顾一下。",tags:["温暖","共情","领导力","老母亲"]},
+ENFP:{name:"竞选者",slogan:"人形金毛，快乐传染源",color:"#fd79a8",color2:"#fe8cb8",desc:"你是行走的彩虹制造机。三分钟一个新想法，五分钟一个新朋友。永远在追自己的好奇心跑。世界因你变有趣。",tags:["热情","创意","社交牛人","快乐小狗"]},
+ISTJ:{name:"物流师",slogan:"规则就是规则，别问为什么",color:"#2d3436",color2:"#3d4548",desc:"你是靠谱的代名词。说好的事一定会做到，列好的表一定会打勾。别人在浪你在干活，然后默默拯救所有人。",tags:["靠谱","自律","规则","计划通"]},
+ISFJ:{name:"守卫者",slogan:"默默守护所有人的天使",color:"#00b894",color2:"#11c9a5",desc:"你是温柔的守护者，记得每个人的生日、口味和喜好。不爱出风头，但缺了你整个团队都转不起来。世界上最值得珍惜的人。",tags:["温暖","细心","忠诚","隐形MVP"]},
+ESTJ:{name:"总经理",slogan:"效率第一，感情第二",color:"#2c3e50",color2:"#34507a",desc:"你是天生的管理者，看到混乱就想整理。做事雷厉风行，说话直来直去。有人觉得你太强势，但没有你团队就散了。",tags:["管理","效率","直率","秩序控"]},
+ESFJ:{name:"执政官",slogan:"人形暖宝宝，社交粘合剂",color:"#e17055",color2:"#e8816b",desc:"你是朋友圈的团魂，谁过生日你第一个记着。聚会你张罗，冷场你救场。人间烟火气最浓的人，缺你不可。",tags:["热心","社交","照顾人","团魂"]},
+ISTP:{name:"鉴赏家",slogan:"别说了，让我拆开看看",color:"#636e72",color2:"#737e82",desc:"你是沉默的手艺人，话不多但手很巧。东西坏了你拆，原理不懂你研究。别人在说你在做，酷就一个字。",tags:["动手","冷静","技术流","沉默酷哥"]},
+ISFP:{name:"探险家",slogan:"佛系艺术家，美即正义",color:"#00cec9",color2:"#11ded9",desc:"你是活在当下的美学爱好者。不强求不将就，跟着感觉走。别人在卷你在享受生活的小确幸，活得通透。",tags:["审美","随性","活在当下","小确幸"]},
+ESTP:{name:"企业家",slogan:"人生就是一场大冒险",color:"#d63031",color2:"#e64142",desc:"你是行动派中的行动派。别人想三遍你已经在做了。天生的冒险家，越刺激越来劲。人生的快乐在于折腾。",tags:["冒险","行动派","刺激","折腾达人"]},
+ESFP:{name:"表演者",slogan:"有我在的地方就是舞台",color:"#fdcb6e",color2:"#fed887",desc:"你是全场的焦点，自带 BGM 出场。哪里有你在哪里就有笑声。人生苦短，不如 Party。人间清醒又人间值得。",tags:["表演","热情","焦点","人间值得"]}
+};
+
+// ============================================================
+// SVG 角色插画 (复用 mbti-test.html 的 charSVG 函数)
+// ============================================================
+function charSVG(type){
+const t=TYPES[type];
+const c1=t.color,c2=t.color2;
+const hairColors={INTJ:"#2d3436",INTP:"#636e72",ENTJ:"#2c3e50",ENTP:"#e67e22",INFJ:"#6c5ce7",INFP:"#a29bfe",ENFJ:"#e84393",ENFP:"#fd79a8",ISTJ:"#2d3436",ISFJ:"#00b894",ESTJ:"#2c3e50",ESFJ:"#e17055",ISTP:"#636e72",ISFP:"#00cec9",ESTP:"#d63031",ESFP:"#fdcb6e"};
+const accessories={INTJ:"glasses",INTP:"glasses",ENTJ:"crown",ENTP:"lightbulb",INFJ:"stars",INFP:"heart",ENFJ:"halo",ENFP:"sparkle",ISTJ:"tie",ISFJ:"flower",ESTJ:"badge",ESFJ:"bow",ISTP:"wrench",ISFP:"leaf",ESTP:"lightning",ESFP:"music"};
+const hc=hairColors[type],acc=accessories[type];
+let accSvg="";
+if(acc==="glasses")accSvg=`<circle cx="62" cy="85" r="14" fill="none" stroke="#333" stroke-width="3"/><circle cx="118" cy="85" r="14" fill="none" stroke="#333" stroke-width="3"/><line x1="76" y1="85" x2="104" y2="85" stroke="#333" stroke-width="3"/>`;
+else if(acc==="crown")accSvg=`<path d="M50,42 L60,25 L75,38 L90,22 L105,38 L120,25 L130,42 Z" fill="#ffd700" stroke="#e6c200" stroke-width="2"/><circle cx="60" cy="25" r="3" fill="#ff6b6b"/><circle cx="90" cy="22" r="3" fill="#ff6b6b"/><circle cx="120" cy="25" r="3" fill="#ff6b6b"/>`;
+else if(acc==="lightbulb")accSvg=`<circle cx="90" cy="30" r="16" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="2"/><rect x="84" y="44" width="12" height="6" rx="2" fill="#b2bec3"/><line x1="86" y1="25" x2="86" y2="35" stroke="#fdcb6e" stroke-width="2"/><line x1="94" y1="25" x2="94" y2="35" stroke="#fdcb6e" stroke-width="2"/>`;
+else if(acc==="stars")accSvg=`<text x="50" y="35" font-size="18" fill="#ffeaa7">✨</text><text x="120" y="35" font-size="18" fill="#ffeaa7">✨</text>`;
+else if(acc==="heart")accSvg=`<text x="82" y="38" font-size="22" fill="#ff7675">♥</text>`;
+else if(acc==="halo")accSvg=`<ellipse cx="90" cy="38" rx="38" ry="8" fill="none" stroke="#ffeaa7" stroke-width="3" opacity="0.8"/>`;
+else if(acc==="sparkle")accSvg=`<text x="48" y="35" font-size="16" fill="#ff7675">✦</text><text x="120" y="35" font-size="16" fill="#ff7675">✦</text>`;
+else if(acc==="tie")accSvg=`<path d="M85,108 L90,116 L95,108 L93,140 L87,140 Z" fill="${c1}" opacity="0.7"/>`;
+else if(acc==="flower")accSvg=`<circle cx="55" cy="45" r="8" fill="#ff7675"/><circle cx="48" cy="38" r="5" fill="#fd79a8"/><circle cx="62" cy="38" r="5" fill="#fd79a8"/><circle cx="48" cy="52" r="5" fill="#fd79a8"/><circle cx="62" cy="52" r="5" fill="#fd79a8"/>`;
+else if(acc==="badge")accSvg=`<circle cx="125" cy="45" r="14" fill="${c1}" opacity="0.8"/><text x="125" y="49" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">★</text>`;
+else if(acc==="bow")accSvg=`<path d="M60,42 Q50,32 55,50 Q60,52 70,42 Q65,50 60,42Z" fill="#fd79a8"/><path d="M60,42 Q70,32 65,50 Q60,52 50,42 Q55,50 60,42Z" fill="#fd79a8"/><circle cx="60" cy="42" r="4" fill="#e84393"/>`;
+else if(acc==="wrench")accSvg=`<g transform="rotate(30,125,40)"><rect x="121" y="28" width="8" height="20" rx="2" fill="#b2bec3"/><rect x="116" y="24" width="18" height="10" rx="2" fill="#b2bec3"/></g>`;
+else if(acc==="leaf")accSvg=`<path d="M55,45 Q40,30 50,50 Q48,55 55,48Z" fill="#00b894"/><path d="M55,45 Q70,30 60,50 Q62,55 55,48Z" fill="#00cec9"/>`;
+else if(acc==="lightning")accSvg=`<path d="M85,25 L78,40 L86,40 L80,55 L96,38 L88,38 L94,25Z" fill="#fdcb6e" stroke="#e8c547" stroke-width="1"/>`;
+else if(acc==="music")accSvg=`<text x="50" y="40" font-size="20" fill="#fd79a8">♪</text><text x="118" y="40" font-size="20" fill="#fd79a8">♫</text>`;
+const eyes={INTJ:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},INTP:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},ENTJ:{l:"<path d='M57,85 L67,85 M57,82 Q62,78 67,82' stroke='#333' stroke-width='3' fill='none'/>",r:"<path d='M113,85 L123,85 M113,82 Q118,78 123,82' stroke='#333' stroke-width='3' fill='none'/>"},ENTP:{l:"<path d='M57,83 Q62,88 67,83' stroke='#333' stroke-width='3' fill='none'/>",r:"<path d='M113,83 Q118,88 123,83' stroke='#333' stroke-width='3' fill='none'/>"},INFJ:{l:"<circle cx='62' cy='85' r='5' fill='#333'/><circle cx='60' cy='83' r='1.5' fill='#fff'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/><circle cx='116' cy='83' r='1.5' fill='#fff'/>"},INFP:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},ENFJ:{l:"<path d='M55,82 Q62,90 69,82' stroke='#333' stroke-width='3' fill='none'/>",r:"<path d='M111,82 Q118,90 125,82' stroke='#333' stroke-width='3' fill='none'/>"},ENFP:{l:"<circle cx='62' cy='85' r='6' fill='#333'/><circle cx='59' cy='82' r='2' fill='#fff'/>",r:"<circle cx='118' cy='85' r='6' fill='#333'/><circle cx='115' cy='82' r='2' fill='#fff'/>"},ISTJ:{l:"<rect x='57' y='80' width='10' height='10' rx='2' fill='none' stroke='#333' stroke-width='2.5'/>",r:"<rect x='113' y='80' width='10' height='10' rx='2' fill='none' stroke='#333' stroke-width='2.5'/>"},ISFJ:{l:"<circle cx='62' cy='85' r='4.5' fill='#333'/>",r:"<circle cx='118' cy='85' r='4.5' fill='#333'/>"},ESTJ:{l:"<path d='M56,82 L68,88 M56,88 L68,82' stroke='#333' stroke-width='2.5'/>",r:"<path d='M112,82 L124,88 M112,88 L124,82' stroke='#333' stroke-width='2.5'/>"},ESFJ:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},ISTP:{l:"<line x1='57' y1='85' x2='67' y2='85' stroke='#333' stroke-width='3'/>",r:"<line x1='113' y1='85' x2='123' y2='85' stroke='#333' stroke-width='3'/>"},ISFP:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},ESTP:{l:"<path d='M57,83 L67,87' stroke='#333' stroke-width='3'/>",r:"<path d='M113,83 L123,87' stroke='#333' stroke-width='3'/>"},ESFP:{l:"<circle cx='62' cy='85' r='6' fill='#333'/><circle cx='59' cy='82' r='2' fill='#fff'/>",r:"<circle cx='118' cy='85' r='6' fill='#333'/><circle cx='115' cy='82' r='2' fill='#fff'/>"}};
+const mouths={INTJ:"<line x1='78' y1='108' x2='102' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",INTP:"<line x1='78' y1='108' x2='102' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",ENTJ:"<path d='M78,108 L102,108' stroke='#333' stroke-width='3' fill='none' stroke-linecap='round'/>",ENTP:"<path d='M76,105 Q90,115 104,105' stroke='#333' stroke-width='3' fill='none'/>",INFJ:"<path d='M80,106 Q90,112 100,106' stroke='#333' stroke-width='3' fill='none'/>",INFP:"<path d='M80,108 Q90,114 100,108' stroke='#333' stroke-width='3' fill='none'/>",ENFJ:"<path d='M75,105 Q90,118 105,105' stroke='#333' stroke-width='3' fill='none'/>",ENFP:"<path d='M74,104 Q90,120 106,104' stroke='#333' stroke-width='3' fill='none'/>",ISTJ:"<line x1='80' y1='108' x2='100' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",ISFJ:"<path d='M80,106 Q90,113 100,106' stroke='#333' stroke-width='3' fill='none'/>",ESTJ:"<line x1='78' y1='108' x2='102' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",ESFJ:"<path d='M76,105 Q90,116 104,105' stroke='#333' stroke-width='3' fill='none'/>",ISTP:"<line x1='80' y1='108' x2='100' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",ISFP:"<path d='M80,107 Q90,113 100,107' stroke='#333' stroke-width='3' fill='none'/>",ESTP:"<path d='M76,104 Q90,116 104,104' stroke='#333' stroke-width='3' fill='none'/>",ESFP:"<path d='M72,103 Q90,122 108,103' stroke='#333' stroke-width='3' fill='none'/>"};
+const cheeks={INTJ:"",INTP:"",ENTJ:"",ENTP:"",INFJ:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",INFP:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",ENFJ:"<circle cx='48' cy='95' r='7' fill='#ffb3ba' opacity='0.5'/><circle cx='132' cy='95' r='7' fill='#ffb3ba' opacity='0.5'/>",ENFP:"<circle cx='48' cy='95' r='7' fill='#ffb3ba' opacity='0.6'/><circle cx='132' cy='95' r='7' fill='#ffb3ba' opacity='0.6'/>",ISTJ:"",ISFJ:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",ESTJ:"",ESFJ:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",ISTP:"",ISFP:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",ESTP:"",ESFP:"<circle cx='48' cy='95' r='8' fill='#ffb3ba' opacity='0.6'/><circle cx='132' cy='95' r='8' fill='#ffb3ba' opacity='0.6'/>"};
+return `<svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="g${type}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
+<ellipse cx="90" cy="155" rx="42" ry="28" fill="url(#g${type})" opacity="0.15"/>
+<ellipse cx="90" cy="55" rx="48" ry="45" fill="${hc}"/>
+<circle cx="90" cy="80" r="45" fill="#fdebd0"/>
+<path d="M45,62 Q50,40 90,35 Q130,40 135,62 Q132,50 120,48 Q100,55 90,50 Q80,55 60,48 Q48,50 45,62Z" fill="${hc}"/>
+<circle cx="45" cy="82" r="6" fill="#fdebd0"/><circle cx="135" cy="82" r="6" fill="#fdebd0"/>
+${cheeks[type]||""}
+${eyes[type].l}${eyes[type].r}
+${mouths[type]}
+${accSvg}
+</svg>`;
+}
+
+// ============================================================
+// 状态管理
+// ============================================================
+let currentMode="interactive";
+let currentPage="home";
+let currentQ=0;
+let answers=new Array(16).fill(null);
+
+// ============================================================
+// 页面切换
+// ============================================================
+function showPage(pageName){
+currentPage=pageName;
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+const target=document.getElementById('page-'+pageName);
+if(target)target.classList.add('active');
+// 更新侧栏导航
+document.querySelectorAll('.page-nav-item').forEach(b=>{
+b.classList.toggle('active',b.dataset.page===pageName);
+});
+// 更新标注
+if(currentMode==="annotate")renderAnnotations(pageName);
+else clearAnnotations();
+// 滚动到顶部
+document.getElementById('phoneInner').scrollTop=0;
+}
+
+// ============================================================
+// 交互逻辑
+// ============================================================
+document.getElementById('startBtn').addEventListener('click',()=>{
+currentQ=0;
+answers.fill(null);
+showPage('quiz');
+renderQuestion();
+});
+
+function renderQuestion(){
+const q=QUESTIONS[currentQ];
+const card=document.getElementById('questionCard');
+const pct=(currentQ/16)*100;
+document.getElementById('progressFill').style.width=pct+'%';
+document.getElementById('progressNum').textContent=currentQ+1;
+card.style.animation='none';
+void card.offsetWidth;
+card.style.animation='slideIn .4s ease';
+document.getElementById('qTitle').textContent=q.text;
+const opts=document.getElementById('qOptions');
+const sel=answers[currentQ];
+opts.innerHTML=`<button class="option${sel==='A'?' selected':''}" data-pick="A">${q.A}</button><button class="option${sel==='B'?' selected':''}" data-pick="B">${q.B}</button>`;
+opts.querySelectorAll('.option').forEach(btn=>{
+btn.addEventListener('click',()=>{
+const pick=btn.dataset.pick;
+answers[currentQ]=pick;
+btn.classList.add('selected');
+setTimeout(()=>{
+if(currentQ<15){currentQ++;renderQuestion();}
+else{showResult();}
+},300);
+});
+});
+const backBtn=document.getElementById('backBtn');
+if(currentQ>0){backBtn.classList.remove('hidden');backBtn.disabled=false;}
+else{backBtn.classList.add('hidden');backBtn.disabled=true;}
+}
+
+document.getElementById('backBtn').addEventListener('click',()=>{
+if(currentQ>0){currentQ--;renderQuestion();}
+});
+
+function calcResult(){
+const dimScore={E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+for(let i=0;i<16;i++){
+if(!answers[i])continue;
+const q=QUESTIONS[i];
+const poleA=q.pole;
+const poleB={E:"I",I:"E",S:"N",N:"S",T:"F",F:"T",J:"P",P:"J"}[poleA];
+if(answers[i]==='A')dimScore[poleA]++;
+else dimScore[poleB]++;
+}
+const dimPairs=[["E","I"],["S","N"],["T","F"],["J","P"]];
+let type="";
+const pcts=[];
+dimPairs.forEach(([a,b])=>{
+const total=dimScore[a]+dimScore[b]||1;
+const pa=Math.round((dimScore[a]/total)*100);
+const pb=100-pa;
+const winner=dimScore[a]>=dimScore[b]?a:b;
+type+=winner;
+pcts.push({first:a,second:b,pctA:pa,pctB:pb});
+});
+return{type,pcts};
+}
+
+function showResult(){
+document.getElementById('progressFill').style.width='100%';
+const{type,pcts}=calcResult();
+const t=TYPES[type];
+document.getElementById('cardHeader').style.background=`linear-gradient(135deg,${t.color},${t.color2})`;
+document.getElementById('typeCode').textContent=type;
+document.getElementById('typeSlogan').textContent=t.slogan;
+document.getElementById('cardIllustration').innerHTML=charSVG(type);
+document.getElementById('typeTitle').textContent=t.name;
+document.getElementById('typeDesc').textContent=t.desc;
+const pctHtml=pcts.map(p=>{
+return`<div class="pct-item"><span class="pct-label">${p.first}</span><span class="pct-bar"><span class="pct-fill" style="width:${p.pctA}%;background:${type.includes(p.first)?t.color:'#ccc'}"></span></span><span style="font-size:9px;color:#999;width:48px;text-align:right">${p.pctA}% / ${p.pctB}%</span></div>`;
+}).join('');
+document.getElementById('percentages').innerHTML=pctHtml;
+document.getElementById('cardTags').innerHTML=t.tags.map(tag=>`<span class="card-tag">#${tag}</span>`).join('');
+showPage('result');
+}
+
+document.getElementById('retryBtn').addEventListener('click',()=>{
+currentQ=0;
+answers.fill(null);
+showPage('home');
+});
+
+document.getElementById('saveBtn').addEventListener('click',()=>{
+alert('原型演示：保存图片功能在正式版中可用');
+});
+
+// ============================================================
+// 模式切换
+// ============================================================
+function setMode(mode){
+currentMode=mode;
+document.querySelectorAll('.mode-btn').forEach(b=>{
+b.classList.toggle('active',b.dataset.mode===mode);
+});
+const layer=document.getElementById('annoLayer');
+const infoBar=document.getElementById('infoBar');
+if(mode==="annotate"){
+layer.classList.add('active');
+renderAnnotations(currentPage);
+infoBar.innerHTML='<span class="dot"></span>标注模式 · 查看各页面的 FR 需求标注';
+// 在标注模式下禁用交互
+document.getElementById('phoneInner').style.pointerEvents='none';
+}else{
+layer.classList.remove('active');
+clearAnnotations();
+infoBar.innerHTML='<span class="dot"></span>交互模式 · 点击体验完整流程';
+document.getElementById('phoneInner').style.pointerEvents='auto';
+}
+}
+
+document.getElementById('modeInteractive').addEventListener('click',()=>setMode('interactive'));
+document.getElementById('modeAnnotate').addEventListener('click',()=>setMode('annotate'));
+
+// ============================================================
+// 页面导航
+// ============================================================
+document.querySelectorAll('.page-nav-item').forEach(btn=>{
+btn.addEventListener('click',()=>{
+const page=btn.dataset.page;
+if(page==='quiz'&&currentQ===0){
+// 如果还没开始过测试，初始化第一题
+answers.fill(null);
+}
+if(page==='quiz'){
+renderQuestion();
+}
+if(page==='result'){
+// 预填示例结果（ENFP）
+const demoAnswers=['A','A','A','B','B','B','B','B','B','B','B','B','B','B','B','B'];
+answers=demoAnswers;
+showResult();
+return;
+}
+showPage(page);
+});
+});
+
+// ============================================================
+// FR 列表渲染
+// ============================================================
+function renderFRList(){
+const list=document.getElementById('frList');
+list.innerHTML=FR_DATA.map(fr=>
+`<div class="fr-item" data-fr="${fr.id}">
+<div class="fr-item-id">${fr.id} <span style="color:#aaa;font-weight:400">P${fr.id.charAt(3)<='5'?0:1}</span></div>
+<div class="fr-item-name">${fr.name}</div>
+<div class="fr-item-desc">${fr.desc}</div>
+</div>`
+).join('');
+// 点击 FR 项跳转到对应页面
+list.querySelectorAll('.fr-item').forEach(item=>{
+item.addEventListener('click',()=>{
+const frId=item.dataset.fr;
+const fr=FR_DATA.find(f=>f.id===frId);
+if(fr&&fr.pages.length>0){
+const page=fr.pages[0];
+// 高亮
+list.querySelectorAll('.fr-item').forEach(i=>i.classList.remove('highlight'));
+item.classList.add('highlight');
+if(page==='quiz'){renderQuestion();}
+if(page==='result'){
+const demoAnswers=['A','A','A','B','B','B','B','B','B','B','B','B','B','B','B','B'];
+answers=demoAnswers;
+showResult();
+return;
+}
+showPage(page);
+// 如果在交互模式，自动切到标注模式
+if(currentMode==='interactive'){
+setMode('annotate');
+}
+}
+});
+});
+}
+renderFRList();
+
+// ============================================================
+// 标注渲染
+// ============================================================
+function renderAnnotations(pageName){
+clearAnnotations();
+const positions=ANNO_POSITIONS[pageName]||[];
+const layer=document.getElementById('annoLayer');
+const inner=document.getElementById('phoneInner');
+const rect=inner.getBoundingClientRect();
+const phoneRect=document.querySelector('.phone-screen').getBoundingClientRect();
+// 计算缩放
+const scale=rect.width/phoneRect.width;
+positions.forEach((pos,idx)=>{
+const label=document.createElement('div');
+label.className='anno-label';
+label.dataset.fr=pos.fr;
+label.style.left=pos.x+'%';
+label.style.top=pos.y+'%';
+label.textContent=pos.text;
+label.title=FR_DATA.find(f=>f.id===pos.fr)?.desc||'';
+// hover 显示详情
+label.addEventListener('mouseenter',function(e){
+const fr=FR_DATA.find(f=>f.id===pos.fr);
+if(!fr)return;
+const hint=document.createElement('div');
+hint.className='anno-hint show';
+hint.innerHTML=`<div class="anno-hint-title">${fr.id} ${fr.name}</div><div class="anno-hint-text">${fr.desc}</div>`;
+hint.style.left=(pos.x)+'%';
+hint.style.top=(pos.y+5)+'%';
+hint.style.transform='translateX(-50%)';
+hint.style.position='absolute';
+hint.id='annoHint';
+layer.appendChild(hint);
+});
+label.addEventListener('mouseleave',function(){
+const hint=document.getElementById('annoHint');
+if(hint)hint.remove();
+});
+layer.appendChild(label);
+});
+}
+
+function clearAnnotations(){
+const layer=document.getElementById('annoLayer');
+layer.innerHTML='';
+}
+
+// 初始化
+showPage('home');
+</script>
+</body>
+</html>
