@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MBTI 性格测评 · 发现你的性格身份</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+--radius:16px;
+--shadow:0 4px 24px rgba(0,0,0,.08);
+--shadow-lg:0 8px 40px rgba(0,0,0,.12);
+--transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+html,body{width:100%;min-height:100%;background:#f0f4ff;font-family:var(--font);color:#1a1a2e;overflow-x:hidden}
+body{display:flex;justify-content:center;align-items:flex-start;padding:0}
+#app{width:100%;max-width:480px;min-height:100vh;margin:0 auto;position:relative}
+
+/* —— 首页 —— */
+#home{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;text-align:center}
+#home .logo{font-size:56px;margin-bottom:12px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#home h1{font-size:28px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+#home .subtitle{font-size:15px;color:#666;margin-bottom:32px;line-height:1.6}
+#home .info-cards{display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;justify-content:center}
+#home .info-card{background:#fff;border-radius:12px;padding:12px 16px;box-shadow:var(--shadow);font-size:13px;color:#555;display:flex;align-items:center;gap:6px}
+#home .info-card span.icon{font-size:20px}
+#home .start-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:16px 48px;border-radius:50px;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(102,126,234,.4);transition:var(--transition);font-family:var(--font)}
+#home .start-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(102,126,234,.5)}
+#home .start-btn:active{transform:translateY(0)}
+#home .footer{margin-top:24px;font-size:12px;color:#aaa}
+
+/* —— 测试页 —— */
+#quiz{display:none;flex-direction:column;min-height:100vh;padding:24px 20px}
+#quiz .progress-bar{width:100%;height:6px;background:#e0e6f0;border-radius:3px;margin-bottom:8px;overflow:hidden}
+#quiz .progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:3px;transition:width .4s ease}
+#quiz .progress-text{font-size:13px;color:#999;margin-bottom:24px;text-align:right}
+#quiz .question-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:32px 24px;margin-bottom:20px;animation:slideIn .4s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+#quiz .q-title{font-size:20px;font-weight:700;line-height:1.5;margin-bottom:28px;color:#1a1a2e}
+#quiz .options{display:flex;flex-direction:column;gap:12px}
+#quiz .option{border:2px solid #e8ecf4;border-radius:12px;padding:18px 20px;font-size:15px;cursor:pointer;transition:var(--transition);background:#fff;color:#333;font-family:var(--font);text-align:left;line-height:1.5}
+#quiz .option:hover{border-color:#667eea;background:#f5f3ff;transform:translateY(-1px)}
+#quiz .option.selected{border-color:#667eea;background:linear-gradient(135deg,#f5f3ff,#ede9fe);font-weight:600}
+#quiz .quiz-nav{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:16px}
+#quiz .back-btn{background:none;border:none;color:#999;font-size:14px;cursor:pointer;padding:8px 12px;font-family:var(--font);transition:var(--transition)}
+#quiz .back-btn:hover{color:#667eea}
+#quiz .back-btn:disabled{opacity:.3;cursor:not-allowed}
+#quiz .back-btn.hidden{visibility:hidden}
+
+/* —— 结果页 —— */
+#result{display:none;flex-direction:column;align-items:center;min-height:100vh;padding:40px 20px}
+#result .result-card{width:100%;max-width:400px;background:#fff;border-radius:24px;box-shadow:var(--shadow-lg);overflow:hidden;animation:cardPop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes cardPop{0%{opacity:0;transform:scale(.85)}100%{opacity:1;transform:scale(1)}}
+#result .card-header{padding:32px 24px 16px;text-align:center;color:#fff;position:relative}
+#result .card-header .type-code{font-size:48px;font-weight:900;letter-spacing:2px;text-shadow:0 2px 8px rgba(0,0,0,.15)}
+#result .card-header .type-slogan{font-size:16px;margin-top:8px;opacity:.95;font-weight:500}
+#result .card-illustration{display:flex;justify-content:center;align-items:center;padding:20px;background:#fff}
+#result .card-illustration svg{width:180px;height:180px}
+#result .card-body{padding:0 24px 24px;text-align:center}
+#result .type-title{font-size:22px;font-weight:700;color:#1a1a2e;margin-bottom:8px}
+#result .type-desc{font-size:14px;color:#666;line-height:1.7;margin-bottom:20px}
+#result .percentages{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px}
+#result .pct-item{background:#f5f5fa;border-radius:8px;padding:8px 14px;font-size:12px;color:#555;display:flex;align-items:center;gap:4px}
+#result .pct-item .pct-label{font-weight:600}
+#result .pct-bar{width:60px;height:6px;background:#e0e6f0;border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle}
+#result .pct-fill{height:100%;border-radius:3px}
+#result .card-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:20px}
+#result .card-tag{background:#f0f4ff;color:#667eea;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500}
+#result .actions{display:flex;flex-direction:column;gap:12px;width:100%;max-width:400px;margin-top:24px}
+#result .save-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:16px;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(102,126,234,.4);transition:var(--transition);font-family:var(--font)}
+#result .save-btn:hover{transform:translateY(-2px)}
+#result .save-btn:active{transform:translateY(0)}
+#result .retry-btn{background:#fff;color:#667eea;border:2px solid #667eea;padding:14px;border-radius:50px;font-size:15px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font)}
+#result .retry-btn:hover{background:#f5f3ff}
+#result .share-tip{font-size:12px;color:#aaa;margin-top:16px;text-align:center}
+
+/* —— 通用 —— */
+.fade-in{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.fade-out{animation:fadeOut .3s ease forwards}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+
+/* —— 保存用隐藏画布容器 —— */
+#canvas-container{position:fixed;left:-9999px;top:0}
+</style>
+</head>
+<body>
+<div id="app">
+<!-- 首页 -->
+<div id="home">
+<div class="logo">🧩</div>
+<h1>MBTI 性格测评</h1>
+<p class="subtitle">16 道趣味题，1 分钟找到你的性格身份<br>生成专属卡片，晒出你的 MBTI</p>
+<div class="info-cards">
+<div class="info-card"><span class="icon">⚡</span>1 分钟搞定</div>
+<div class="info-card"><span class="icon">🔒</span>隐私无忧</div>
+<div class="info-card"><span class="icon">🎨</span>专属卡片</div>
+</div>
+<button class="start-btn" id="startBtn">开始测试</button>
+<div class="footer">仅供娱乐参考 · 不代表专业心理评估</div>
+</div>
+
+<!-- 测试页 -->
+<div id="quiz">
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div class="progress-text"><span id="progressNum">1</span> / 16</div>
+<div class="question-card" id="questionCard">
+<div class="q-title" id="qTitle"></div>
+<div class="options" id="qOptions"></div>
+</div>
+<div class="quiz-nav">
+<button class="back-btn" id="backBtn">← 上一题</button>
+</div>
+</div>
+
+<!-- 结果页 -->
+<div id="result">
+<div class="result-card" id="resultCard">
+<div class="card-header" id="cardHeader">
+<div class="type-code" id="typeCode"></div>
+<div class="type-slogan" id="typeSlogan"></div>
+</div>
+<div class="card-illustration" id="cardIllustration"></div>
+<div class="card-body">
+<div class="type-title" id="typeTitle"></div>
+<div class="type-desc" id="typeDesc"></div>
+<div class="percentages" id="percentages"></div>
+<div class="card-tags" id="cardTags"></div>
+</div>
+</div>
+<div class="actions">
+<button class="save-btn" id="saveBtn">📸 保存卡片图片</button>
+<button class="retry-btn" id="retryBtn">🔄 重新测试</button>
+</div>
+<div class="share-tip">保存图片后，发到朋友圈晒出你的性格身份吧！</div>
+</div>
+
+<div id="canvas-container"></div>
+</div>
+
+<script>
+// ============================================================
+// 16 道测试题目 — 4 维度 × 4 题
+// 维度顺序: E/I(0-3), S/N(4-7), T/F(8-11), J/P(12-15)
+// 每题两个选项分别对应一个极
+// ============================================================
+const QUESTIONS = [
+// E/I 维度
+{text:"周末到了，你更想怎么过？",A:"约朋友出去聚聚，越热闹越好",B:"一个人宅家追剧打游戏，独处充电",dim:"EI",pole:"E"},
+{text:"到了新环境，你的第一反应是？",A:"主动找人聊天，很快就能打成一片",B:"先观察一会儿，等别人来找自己",dim:"EI",pole:"E"},
+{text:"遇到开心的事，你会？",A:"立刻发朋友圈/群聊告诉所有人",B:"默默开心就好，不一定和别人说",dim:"EI",pole:"E"},
+{text:"手机一天没响，你会？",A:"有点慌，觉得是不是被遗忘了",B:"太好了，终于可以安静一会儿",dim:"EI",pole:"E"},
+// S/N 维度
+{text:"读一本小说，你更在意什么？",A:"故事的情节是否合理、细节是否真实",B:"故事背后的隐喻和深层含义",dim:"SN",pole:"S"},
+{text:"解决问题时，你更倾向？",A:"用已有的经验和靠谱的方法，稳扎稳打",B:"跳出框架想个新方案，试试没走过的路",dim:"SN",pole:"S"},
+{text:"别人跟你说一件事，你更关注？",A:"他说了什么具体的事实和信息",B:"他说话时的情绪和言外之意",dim:"SN",pole:"S"},
+{text:"你更喜欢的旅行方式是？",A:"做好详细攻略，按计划打卡每个景点",B:"随便走走看看，路上有什么惊喜都行",dim:"SN",pole:"S"},
+// T/F 维度
+{text:"朋友跟你倒苦水，你更可能说？",A:"帮你分析问题在哪，该怎么解决",B:"先安慰你，陪你一起骂就对了",dim:"TF",pole:"T"},
+{text:"做个重要的决定，你更靠？",A:"逻辑分析利弊，理性权衡后做选择",B:"内心感受和直觉，觉得对就去做",dim:"TF",pole:"T"},
+{text:"看到新闻里有人遭遇不幸，你？",A:"思考是什么导致了这个问题",B:"先感到心疼和难过，希望他没事",dim:"TF",pole:"T"},
+{text:"和朋友意见不合时，你会？",A:"就事论事据理力争，对就是对",B:"维护关系更重要，求同存异",dim:"TF",pole:"T"},
+// J/P 维度
+{text:"你的书桌/桌面通常什么样？",A:"整整齐齐，东西都有固定位置",B:"看起来有点乱，但我自己知道东西在哪",dim:"JP",pole:"J"},
+{text:"面对截止日期，你的节奏是？",A:"提前做好，最后一天淡定交差",B:"不到最后一刻没有灵感，冲刺完成",dim:"JP",pole:"J"},
+{text:"旅行计划你更喜欢？",A:"提前订好机票酒店行程表，心里有底",B:"走一步看一步，随性才有惊喜",dim:"JP",pole:"J"},
+{text:"你的待办清单是？",A:"列好打勾，完成一项划掉一项很爽",B:"列了但不太看，想起来就做",dim:"JP",pole:"J"}
+];
+
+// ============================================================
+// 16 种 MBTI 类型数据
+// ============================================================
+const TYPES = {
+INTJ:{name:"建筑师",slogan:"社恐但内心戏最多的人",color:"#3b5998",color2:"#4e6ca8",desc:"你是天生的战略家，脑子里永远在跑着几条世界线。别人看到的是沉默，其实你是在脑内模拟了十种可能。独立、果断，比起被理解更在意把事情做对。",tags:["战略思维","独立","完美主义","脑内模拟器"]},
+INTP:{name:"逻辑学家",slogan:"永远在'但是……'的思考者",color:"#4a6fa5",color2:"#5b7fb5",desc:"别人聊天你拆逻辑，别人接受你问为什么。你是行走的'十万个为什么'，对一切原理充满好奇。社交是耗电的，拆解问题是充电的。",tags:["逻辑","好奇","拆解","懒癌晚期"]},
+ENTJ:{name:"指挥官",slogan:"KING来了，都让开",color:"#c0392b",color2:"#d4453a",desc:"天生领袖，执行力拉满。你的口头禅是'让我来'。别人还在讨论方案你已经动了。有时太强势，但跟着你准没错。",tags:["领导力","果断","效率","天生C位"]},
+ENTP:{name:"辩论家",slogan:"你说得对，但我偏要杠",color:"#e67e22",color2:"#ee8e3a",desc:"你是话题搅局者，永远的魔鬼代言人。不是故意抬杠，是真的觉得反方也有道理。点子多到爆炸，执行嘛……看心情。",tags:["脑洞大","辩论","创意","三分钟热度"]},
+INFJ:{name:"提倡者",slogan:"看透不说透的神秘主义者",color:"#6c5ce7",color2:"#7d6ef0",desc:"你有一种'读心术'，别人还没开口你已经知道他在想什么。理想主义者，想让世界变得更好，但经常因为太懂别人而忘了自己。",tags:["共情力","理想主义","神秘","治愈系"]},
+INFP:{name:"调停者",slogan:"心里住着一整个童话世界",color:"#a29bfe",color2:"#b3acff",desc:"你是温柔的 dreamer，内心世界比外部世界丰富十倍。容易感动，也容易内耗。别人不懂你的浪漫没关系，你自己懂就好。",tags:["浪漫","敏感","理想主义","内耗冠军"]},
+ENFJ:{name:"主人公",slogan:"全世界的妈妈粉",color:"#e84393",color2:"#ee57a3",desc:"你是人群中的太阳，走到哪暖到哪。天生会照顾人，记得每个人的喜好。但偶尔也请让自己被照顾一下。",tags:["温暖","共情","领导力","老母亲"]},
+ENFP:{name:"竞选者",slogan:"人形金毛，快乐传染源",color:"#fd79a8",color2:"#fe8cb8",desc:"你是行走的彩虹制造机。三分钟一个新想法，五分钟一个新朋友。永远在追自己的好奇心跑。世界因你变有趣。",tags:["热情","创意","社交牛人","快乐小狗"]},
+ISTJ:{name:"物流师",slogan:"规则就是规则，别问为什么",color:"#2d3436",color2:"#3d4548",desc:"你是靠谱的代名词。说好的事一定会做到，列好的表一定会打勾。别人在浪你在干活，然后默默拯救所有人。",tags:["靠谱","自律","规则","计划通"]},
+ISFJ:{name:"守卫者",slogan:"默默守护所有人的天使",color:"#00b894",color2:"#11c9a5",desc:"你是温柔的守护者，记得每个人的生日、口味和喜好。不爱出风头，但缺了你整个团队都转不起来。世界上最值得珍惜的人。",tags:["温暖","细心","忠诚","隐形MVP"]},
+ESTJ:{name:"总经理",slogan:"效率第一，感情第二",color:"#2c3e50",color2:"#34507a",desc:"你是天生的管理者，看到混乱就想整理。做事雷厉风行，说话直来直去。有人觉得你太强势，但没有你团队就散了。",tags:["管理","效率","直率","秩序控"]},
+ESFJ:{name:"执政官",slogan:"人形暖宝宝，社交粘合剂",color:"#e17055",color2:"#e8816b",desc:"你是朋友圈的团魂，谁过生日你第一个记着。聚会你张罗，冷场你救场。人间烟火气最浓的人，缺你不可。",tags:["热心","社交","照顾人","团魂"]},
+ISTP:{name:"鉴赏家",slogan:"别说了，让我拆开看看",color:"#636e72",color2:"#737e82",desc:"你是沉默的手艺人，话不多但手很巧。东西坏了你拆，原理不懂你研究。别人在说你在做，酷就一个字。",tags:["动手","冷静","技术流","沉默酷哥"]},
+ISFP:{name:"探险家",slogan:"佛系艺术家，美即正义",color:"#00cec9",color2:"#11ded9",desc:"你是活在当下的美学爱好者。不强求不将就，跟着感觉走。别人在卷你在享受生活的小确幸，活得通透。",tags:["审美","随性","活在当下","小确幸"]},
+ESTP:{name:"企业家",slogan:"人生就是一场大冒险",color:"#d63031",color2:"#e64142",desc:"你是行动派中的行动派。别人想三遍你已经在做了。天生的冒险家，越刺激越来劲。人生的快乐在于折腾。",tags:["冒险","行动派","刺激","折腾达人"]},
+ESFP:{name:"表演者",slogan:"有我在的地方就是舞台",color:"#fdcb6e",color2:"#fed887",desc:"你是全场的焦点，自带 BGM 出场。哪里有你在哪里就有笑声。人生苦短，不如 Party。人间清醒又人间值得。",tags:["表演","热情","焦点","人间值得"]}
+};
+
+// ============================================================
+// 16 个拟人化 SVG 角色插画 — 统一风格，每个类型有专属配色
+// 统一风格要素: 圆脸、大眼睛、简单配色、可爱表情
+// ============================================================
+function charSVG(type){
+const t=TYPES[type];
+const c1=t.color,c2=t.color2;
+const hairColors={
+INTJ:"#2d3436",INTP:"#636e72",ENTJ:"#2c3e50",ENTP:"#e67e22",
+INFJ:"#6c5ce7",INFP:"#a29bfe",ENFJ:"#e84393",ENFP:"#fd79a8",
+ISTJ:"#2d3436",ISFJ:"#00b894",ESTJ:"#2c3e50",ESFJ:"#e17055",
+ISTP:"#636e72",ISFP:"#00cec9",ESTP:"#d63031",ESFP:"#fdcb6e"
+};
+const accessories={
+INTJ:"glasses",INTP:"glasses",ENTJ:"crown",ENTP:"lightbulb",
+INFJ:"stars",INFP:"heart",ENFJ:"halo",ENFP:"sparkle",
+ISTJ:"tie",ISFJ:"flower",ESTJ:"badge",ESFJ:"bow",
+ISTP:"wrench",ISFP:"leaf",ESTP:"lightning",ESFP:"music"
+};
+const hc=hairColors[type];
+const acc=accessories[type];
+let accSvg="";
+if(acc==="glasses")accSvg=`<circle cx="62" cy="85" r="14" fill="none" stroke="#333" stroke-width="3"/><circle cx="118" cy="85" r="14" fill="none" stroke="#333" stroke-width="3"/><line x1="76" y1="85" x2="104" y2="85" stroke="#333" stroke-width="3"/>`;
+else if(acc==="crown")accSvg=`<path d="M50,42 L60,25 L75,38 L90,22 L105,38 L120,25 L130,42 Z" fill="#ffd700" stroke="#e6c200" stroke-width="2"/><circle cx="60" cy="25" r="3" fill="#ff6b6b"/><circle cx="90" cy="22" r="3" fill="#ff6b6b"/><circle cx="120" cy="25" r="3" fill="#ff6b6b"/>`;
+else if(acc==="lightbulb")accSvg=`<circle cx="90" cy="30" r="16" fill="#ffeaa7" stroke="#fdcb6e" stroke-width="2"/><rect x="84" y="44" width="12" height="6" rx="2" fill="#b2bec3"/><line x1="86" y1="25" x2="86" y2="35" stroke="#fdcb6e" stroke-width="2"/><line x1="94" y1="25" x2="94" y2="35" stroke="#fdcb6e" stroke-width="2"/>`;
+else if(acc==="stars")accSvg=`<text x="50" y="35" font-size="18" fill="#ffeaa7">✨</text><text x="120" y="35" font-size="18" fill="#ffeaa7">✨</text>`;
+else if(acc==="heart")accSvg=`<text x="82" y="38" font-size="22" fill="#ff7675">♥</text>`;
+else if(acc==="halo")accSvg=`<ellipse cx="90" cy="38" rx="38" ry="8" fill="none" stroke="#ffeaa7" stroke-width="3" opacity="0.8"/>`;
+else if(acc==="sparkle")accSvg=`<text x="48" y="35" font-size="16" fill="#ff7675">✦</text><text x="120" y="35" font-size="16" fill="#ff7675">✦</text>`;
+else if(acc==="tie")accSvg=`<path d="M85,108 L90,116 L95,108 L93,140 L87,140 Z" fill="${c1}" opacity="0.7"/>`;
+else if(acc==="flower")accSvg=`<circle cx="55" cy="45" r="8" fill="#ff7675"/><circle cx="48" cy="38" r="5" fill="#fd79a8"/><circle cx="62" cy="38" r="5" fill="#fd79a8"/><circle cx="48" cy="52" r="5" fill="#fd79a8"/><circle cx="62" cy="52" r="5" fill="#fd79a8"/>`;
+else if(acc==="badge")accSvg=`<circle cx="125" cy="45" r="14" fill="${c1}" opacity="0.8"/><text x="125" y="49" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">★</text>`;
+else if(acc==="bow")accSvg=`<path d="M60,42 Q50,32 55,50 Q60,52 70,42 Q65,50 60,42Z" fill="#fd79a8"/><path d="M60,42 Q70,32 65,50 Q60,52 50,42 Q55,50 60,42Z" fill="#fd79a8"/><circle cx="60" cy="42" r="4" fill="#e84393"/>`;
+else if(acc==="wrench")accSvg=`<g transform="rotate(30,125,40)"><rect x="121" y="28" width="8" height="20" rx="2" fill="#b2bec3"/><rect x="116" y="24" width="18" height="10" rx="2" fill="#b2bec3"/></g>`;
+else if(acc==="leaf")accSvg=`<path d="M55,45 Q40,30 50,50 Q48,55 55,48Z" fill="#00b894"/><path d="M55,45 Q70,30 60,50 Q62,55 55,48Z" fill="#00cec9"/>`;
+else if(acc==="lightning")accSvg=`<path d="M85,25 L78,40 L86,40 L80,55 L96,38 L88,38 L94,25Z" fill="#fdcb6e" stroke="#e8c547" stroke-width="1"/>`;
+else if(acc==="music")accSvg=`<text x="50" y="40" font-size="20" fill="#fd79a8">♪</text><text x="118" y="40" font-size="20" fill="#fd79a8">♫</text>`;
+
+// 不同类型有不同表情
+const eyes={
+INTJ:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},
+INTP:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},
+ENTJ:{l:"<path d='M57,85 L67,85 M57,82 Q62,78 67,82' stroke='#333' stroke-width='3' fill='none'/>",r:"<path d='M113,85 L123,85 M113,82 Q118,78 123,82' stroke='#333' stroke-width='3' fill='none'/>"},
+ENTP:{l:"<path d='M57,83 Q62,88 67,83' stroke='#333' stroke-width='3' fill='none'/>",r:"<path d='M113,83 Q118,88 123,83' stroke='#333' stroke-width='3' fill='none'/>"},
+INFJ:{l:"<circle cx='62' cy='85' r='5' fill='#333'/><circle cx='60' cy='83' r='1.5' fill='#fff'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/><circle cx='116' cy='83' r='1.5' fill='#fff'/>"},
+INFP:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},
+ENFJ:{l:"<path d='M55,82 Q62,90 69,82' stroke='#333' stroke-width='3' fill='none'/>",r:"<path d='M111,82 Q118,90 125,82' stroke='#333' stroke-width='3' fill='none'/>"},
+ENFP:{l:"<circle cx='62' cy='85' r='6' fill='#333'/><circle cx='59' cy='82' r='2' fill='#fff'/>",r:"<circle cx='118' cy='85' r='6' fill='#333'/><circle cx='115' cy='82' r='2' fill='#fff'/>"},
+ISTJ:{l:"<rect x='57' y='80' width='10' height='10' rx='2' fill='none' stroke='#333' stroke-width='2.5'/>",r:"<rect x='113' y='80' width='10' height='10' rx='2' fill='none' stroke='#333' stroke-width='2.5'/>"},
+ISFJ:{l:"<circle cx='62' cy='85' r='4.5' fill='#333'/>",r:"<circle cx='118' cy='85' r='4.5' fill='#333'/>"},
+ESTJ:{l:"<path d='M56,82 L68,88 M56,88 L68,82' stroke='#333' stroke-width='2.5'/>",r:"<path d='M112,82 L124,88 M112,88 L124,82' stroke='#333' stroke-width='2.5'/>"},
+ESFJ:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},
+ISTP:{l:"<line x1='57' y1='85' x2='67' y2='85' stroke='#333' stroke-width='3'/>",r:"<line x1='113' y1='85' x2='123' y2='85' stroke='#333' stroke-width='3'/>"},
+ISFP:{l:"<circle cx='62' cy='85' r='5' fill='#333'/>",r:"<circle cx='118' cy='85' r='5' fill='#333'/>"},
+ESTP:{l:"<path d='M57,83 L67,87' stroke='#333' stroke-width='3'/>",r:"<path d='M113,83 L123,87' stroke='#333' stroke-width='3'/>"},
+ESFP:{l:"<circle cx='62' cy='85' r='6' fill='#333'/><circle cx='59' cy='82' r='2' fill='#fff'/>",r:"<circle cx='118' cy='85' r='6' fill='#333'/><circle cx='115' cy='82' r='2' fill='#fff'/>"}
+};
+const mouths={
+INTJ:"<line x1='78' y1='108' x2='102' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",
+INTP:"<line x1='78' y1='108' x2='102' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",
+ENTJ:"<path d='M78,108 L102,108' stroke='#333' stroke-width='3' fill='none' stroke-linecap='round'/>",
+ENTP:"<path d='M76,105 Q90,115 104,105' stroke='#333' stroke-width='3' fill='none'/>",
+INFJ:"<path d='M80,106 Q90,112 100,106' stroke='#333' stroke-width='3' fill='none'/>",
+INFP:"<path d='M80,108 Q90,114 100,108' stroke='#333' stroke-width='3' fill='none'/>",
+ENFJ:"<path d='M75,105 Q90,118 105,105' stroke='#333' stroke-width='3' fill='none'/>",
+ENFP:"<path d='M74,104 Q90,120 106,104' stroke='#333' stroke-width='3' fill='none'/>",
+ISTJ:"<line x1='80' y1='108' x2='100' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",
+ISFJ:"<path d='M80,106 Q90,113 100,106' stroke='#333' stroke-width='3' fill='none'/>",
+ESTJ:"<line x1='78' y1='108' x2='102' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",
+ESFJ:"<path d='M76,105 Q90,116 104,105' stroke='#333' stroke-width='3' fill='none'/>",
+ISTP:"<line x1='80' y1='108' x2='100' y2='108' stroke='#333' stroke-width='3' stroke-linecap='round'/>",
+ISFP:"<path d='M80,107 Q90,113 100,107' stroke='#333' stroke-width='3' fill='none'/>",
+ESTP:"<path d='M76,104 Q90,116 104,104' stroke='#333' stroke-width='3' fill='none'/>",
+ESFP:"<path d='M72,103 Q90,122 108,103' stroke='#333' stroke-width='3' fill='none'/>"
+};
+const cheeks={
+INTJ:"",INTP:"",ENTJ:"",ENTP:"",
+INFJ:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",
+INFP:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",
+ENFJ:"<circle cx='48' cy='95' r='7' fill='#ffb3ba' opacity='0.5'/><circle cx='132' cy='95' r='7' fill='#ffb3ba' opacity='0.5'/>",
+ENFP:"<circle cx='48' cy='95' r='7' fill='#ffb3ba' opacity='0.6'/><circle cx='132' cy='95' r='7' fill='#ffb3ba' opacity='0.6'/>",
+ISTJ:"",ISFJ:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",
+ESTJ:"",ESFJ:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",
+ISTP:"",ISFP:"<circle cx='50' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/><circle cx='130' cy='95' r='6' fill='#ffb3ba' opacity='0.5'/>",
+ESTP:"",ESFP:"<circle cx='48' cy='95' r='8' fill='#ffb3ba' opacity='0.6'/><circle cx='132' cy='95' r='8' fill='#ffb3ba' opacity='0.6'/>"
+};
+
+return `<svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="g${type}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
+<!-- body -->
+<ellipse cx="90" cy="155" rx="42" ry="28" fill="url(#g${type})" opacity="0.15"/>
+<!-- hair back -->
+<ellipse cx="90" cy="55" rx="48" ry="45" fill="${hc}"/>
+<!-- face -->
+<circle cx="90" cy="80" r="45" fill="#fdebd0"/>
+<!-- hair front -->
+<path d="M45,62 Q50,40 90,35 Q130,40 135,62 Q132,50 120,48 Q100,55 90,50 Q80,55 60,48 Q48,50 45,62Z" fill="${hc}"/>
+<!-- ears -->
+<circle cx="45" cy="82" r="6" fill="#fdebd0"/><circle cx="135" cy="82" r="6" fill="#fdebd0"/>
+${cheeks[type]||""}
+${eyes[type].l}${eyes[type].r}
+${mouths[type]}
+${accSvg}
+</svg>`;
+}
+
+// ============================================================
+// 状态
+// ============================================================
+let currentQ=0;
+let answers=new Array(16).fill(null); // null未答, 'A'/'B'
+
+// ============================================================
+// 页面切换
+// ============================================================
+function showPage(id){
+['home','quiz','result'].forEach(p=>{
+const el=document.getElementById(p);
+if(p===id){el.style.display='flex';el.classList.add('fade-in');}
+else{el.classList.remove('fade-in');el.style.display='none';}
+});
+}
+
+// ============================================================
+// 首页 → 开始
+// ============================================================
+document.getElementById('startBtn').addEventListener('click',()=>{
+currentQ=0;
+answers.fill(null);
+showPage('quiz');
+renderQuestion();
+});
+
+// ============================================================
+// 渲染题目
+// ============================================================
+function renderQuestion(){
+const q=QUESTIONS[currentQ];
+const card=document.getElementById('questionCard');
+// 进度条
+const pct=(currentQ/16)*100;
+document.getElementById('progressFill').style.width=pct+'%';
+document.getElementById('progressNum').textContent=currentQ+1;
+// 重新触发动画
+card.style.animation='none';
+void card.offsetWidth;
+card.style.animation='slideIn .4s ease';
+// 题目
+document.getElementById('qTitle').textContent=q.text;
+// 选项
+const opts=document.getElementById('qOptions');
+const sel=answers[currentQ];
+opts.innerHTML=
+`<button class="option${sel==='A'?' selected':''}" data-pick="A">${q.A}</button>`+
+`<button class="option${sel==='B'?' selected':''}" data-pick="B">${q.B}</button>`;
+opts.querySelectorAll('.option').forEach(btn=>{
+btn.addEventListener('click',()=>{
+const pick=btn.dataset.pick;
+answers[currentQ]=pick;
+btn.classList.add('selected');
+// 短暂延迟后自动跳下一题
+setTimeout(()=>{
+if(currentQ<15){
+currentQ++;
+renderQuestion();
+}else{
+showResult();
+}
+},300);
+});
+});
+// 返回按钮
+const backBtn=document.getElementById('backBtn');
+if(currentQ>0){backBtn.classList.remove('hidden');backBtn.disabled=false;}
+else{backBtn.classList.add('hidden');backBtn.disabled=true;}
+}
+
+// 返回上一题
+document.getElementById('backBtn').addEventListener('click',()=>{
+if(currentQ>0){
+currentQ--;
+renderQuestion();
+}
+});
+
+// ============================================================
+// 计分 & 展示结果
+// ============================================================
+function calcResult(){
+const dimScore={E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+for(let i=0;i<16;i++){
+if(!answers[i])continue;
+const q=QUESTIONS[i];
+const poleA=q.pole; // A 对应的极
+// B 对应另一个极
+const poleB={E:"I",I:"E",S:"N",N:"S",T:"F",F:"T",J:"P",P:"J"}[poleA];
+if(answers[i]==='A')dimScore[poleA]++;
+else dimScore[poleB]++;
+}
+// 每个维度判定 + 百分比
+const dimPairs=[["E","I"],["S","N"],["T","F"],["J","P"]];
+let type="";
+const pcts=[];
+dimPairs.forEach(([a,b])=>{
+const total=dimScore[a]+dimScore[b]||1;
+const pa=Math.round((dimScore[a]/total)*100);
+const pb=100-pa;
+const winner=dimScore[a]>=dimScore[b]?a:b; // 平票默认取前者(E/S/T/J)
+type+=winner;
+pcts.push({label:a+":"+b,first:a,second:b,pctA:pa,pctB:pb});
+});
+return{type,pcts};
+}
+
+function showResult(){
+document.getElementById('progressFill').style.width='100%';
+const{type,pcts}=calcResult();
+const t=TYPES[type];
+// 卡片头部
+document.getElementById('cardHeader').style.background=`linear-gradient(135deg,${t.color},${t.color2})`;
+document.getElementById('typeCode').textContent=type;
+document.getElementById('typeSlogan').textContent=t.slogan;
+// 插画
+document.getElementById('cardIllustration').innerHTML=charSVG(type);
+// 描述
+document.getElementById('typeTitle').textContent=t.name;
+document.getElementById('typeDesc').textContent=t.desc;
+// 百分比
+const pctHtml=pcts.map(p=>{
+const firstColor=type.includes(p.first)?'#667eea':'#ccc';
+return`<div class="pct-item"><span class="pct-label">${p.first}</span><div class="pct-bar"><div class="pct-fill" style="width:${p.pctA}%;background:${type.includes(p.first)?t.color:'#ccc'}"></div></div><span style="font-size:11px;color:#999;width:56px;text-align:right">${p.pctA}% / ${p.pctB}%</span></div>`;
+}).join('');
+document.getElementById('percentages').innerHTML=pctHtml;
+// 标签
+document.getElementById('cardTags').innerHTML=t.tags.map(tag=>`<span class="card-tag">#${tag}</span>`).join('');
+showPage('result');
+}
+
+// ============================================================
+// 重新测试
+// ============================================================
+document.getElementById('retryBtn').addEventListener('click',()=>{
+currentQ=0;
+answers.fill(null);
+showPage('home');
+});
+
+// ============================================================
+// 保存卡片为图片
+// ============================================================
+document.getElementById('saveBtn').addEventListener('click',()=>{
+saveCardAsImage();
+});
+
+function saveCardAsImage(){
+const card=document.getElementById('resultCard');
+const w=card.offsetWidth;
+const h=card.offsetHeight;
+const scale=2; // 2x 清晰度
+const canvas=document.createElement('canvas');
+canvas.width=w*scale;
+canvas.height=(h+80)*scale; // 底部留白
+const ctx=canvas.getContext('2d');
+ctx.scale(scale,scale);
+// 背景
+const grad=ctx.createLinearGradient(0,0,0,h+80);
+grad.addColorStop(0,'#f0f4ff');
+grad.addColorStop(1,'#e8ecf8');
+ctx.fillStyle=grad;
+ctx.fillRect(0,0,w,h+80);
+
+// 获取卡片内联SVG
+const svgEl=card.querySelector('svg');
+const svgData=new XMLSerializer().serializeToString(svgEl);
+const svgBlob=new Blob([svgData],{type:'image/svg+xml;charset=utf-8'});
+const svgUrl=URL.createObjectURL(svgBlob);
+
+const img=new Image();
+img.onload=function(){
+// 卡片起始 x
+const cardX=(w-w)/2; // 卡片满宽
+// 画卡片白色圆角背景
+ctx.fillStyle='#fff';
+roundRect(ctx,8,8,w-16,h,scale*16);
+ctx.fill();
+
+// 头部渐变
+const t=TYPES[document.getElementById('typeCode').textContent];
+const typeCode=document.getElementById('typeCode').textContent;
+const hdrGrad=ctx.createLinearGradient(0,8,0,8+160);
+hdrGrad.addColorStop(0,t.color);
+hdrGrad.addColorStop(1,t.color2);
+ctx.fillStyle=hdrGrad;
+roundRect(ctx,8,8,w-16,160,scale*16,true,true,false,false);
+ctx.fill();
+
+// 类型代码
+ctx.fillStyle='#fff';
+ctx.font='bold 42px '+getComputedStyle(document.body).fontFamily;
+ctx.textAlign='center';
+ctx.fillText(typeCode,w/2,72);
+// 标语
+ctx.font='600 16px '+getComputedStyle(document.body).fontFamily;
+ctx.fillText(t.slogan,w/2,100);
+
+// 角色插画
+ctx.drawImage(img,(w-160)/2,168,160,160);
+
+// 类型名称
+ctx.fillStyle='#1a1a2e';
+ctx.font='bold 22px '+getComputedStyle(document.body).fontFamily;
+ctx.fillText(t.name,w/2,360);
+// 描述（自动换行）
+ctx.fillStyle='#666';
+ctx.font='14px '+getComputedStyle(document.body).fontFamily;
+wrapText(ctx,t.desc,w/2,388,w-60,22);
+
+// 标签
+ctx.font='600 12px '+getComputedStyle(document.body).fontFamily;
+let tagY=h-16;
+const tagStart=20;
+let tagX=tagStart;
+ctx.textAlign='left';
+t.tags.forEach((tag,i)=>{
+const tw=ctx.measureText('#'+tag).width+24;
+if(tagX+tw>w-20){tagX=tagStart;}
+ctx.fillStyle='#f0f4ff';
+roundRect(ctx,tagX,tagY-14,tw,22,11);
+ctx.fill();
+ctx.fillStyle='#667eea';
+ctx.fillText('#'+tag,tagX+12,tagY);
+tagX+=tw+8;
+});
+
+// 底部水印
+ctx.fillStyle='#aaa';
+ctx.font='12px '+getComputedStyle(document.body).fontFamily;
+ctx.textAlign='center';
+ctx.fillText('MBTI 性格测评 · 仅供娱乐参考',w/2,h+50);
+
+URL.revokeObjectURL(svgUrl);
+
+// 下载
+canvas.toBlob(function(blob){
+const url=URL.createObjectURL(blob);
+const a=document.createElement('a');
+a.href=url;
+a.download='MBTI_'+typeCode+'性格身份卡.png';
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+setTimeout(()=>URL.revokeObjectURL(url),100);
+},'image/png');
+};
+img.onerror=function(){
+URL.revokeObjectURL(svgUrl);
+alert('图片生成失败，请重试');
+};
+img.src=svgUrl;
+}
+
+function roundRect(ctx,x,y,w,h,r,tl,tr,br,bl){
+if(typeof tl==='boolean'){tl=tl?r:0;tr=tr?r:0;br=br?r:0;bl=bl?r:0;}
+ctx.beginPath();
+ctx.moveTo(x+r,y);
+ctx.arcTo(x+w,y,x+w,y+h,r);
+ctx.arcTo(x+w,y+h,x,y+h,r);
+ctx.arcTo(x,y+h,x,y,r);
+ctx.arcTo(x,y,x+w,y,r);
+ctx.closePath();
+}
+
+function wrapText(ctx,text,x,y,maxWidth,lineH){
+const chars=text.split('');
+let line='';
+let curY=y;
+for(let i=0;i<chars.length;i++){
+const test=line+chars[i];
+if(ctx.measureText(test).width>maxWidth&&line){
+ctx.fillText(line,x,curY);
+line=chars[i];
+curY+=lineH;
+}else{
+line=test;
+}
+}
+if(line)ctx.fillText(line,x,curY);
+}
+</script>
+</body>
+</html>
